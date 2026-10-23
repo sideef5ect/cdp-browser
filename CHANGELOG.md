@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.1](https://github.com/sideef5ect/cdp-browser/compare/v1.0.0...v1.0.1) (2026-10-23)
+
+
+### Build System
+
+* pin the ubuntu base image by digest ([67ba69e](https://github.com/sideef5ect/cdp-browser/commit/67ba69e731cdc10e178f11f278749b33ebd366ad))
+
+
+### Continuous Integration
+
+* build the image from its own workflow after a release tag ([e46f835](https://github.com/sideef5ect/cdp-browser/commit/e46f8356eacc9970049eb2666f92a27272d99fd7))
+* bump the actions group across 1 directory with 8 updates ([#3](https://github.com/sideef5ect/cdp-browser/issues/3)) ([0b4a5fb](https://github.com/sideef5ect/cdp-browser/commit/0b4a5fbc6aa99adee91235bb4022e046811e1256))
+
 ## 1.0.0 (2026-10-23)
 
 
