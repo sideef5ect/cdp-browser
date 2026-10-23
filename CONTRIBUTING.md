@@ -53,7 +53,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 | `docs:`, `chore:`, `ci:`, `build:` | Docs, maintenance, workflows, image build | Patch |
 
 - Branch from `master` and open the pull request against `master`
-- Keep a pull request to one change; CI builds the image for both platforms and must pass
+- Keep a pull request to one change; Lint must pass. CI does not build the image for pull requests, so build it yourself (see Development Setup) when you change `docker/`
 - Do not bump versions, edit `CHANGELOG.md`, or push tags; the release PR does that
 - Port defaults (`19222` CDP, `15900` VNC) and the container and volume names stay in step across the Dockerfile, the README, the docs, and `docker/docker-compose.yaml`
 

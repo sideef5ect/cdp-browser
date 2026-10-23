@@ -1,41 +1,85 @@
 name: Build Image
 
+# Builds only for a release tag or by hand, never on push to master or pull request.
+# release-please tags with GITHUB_TOKEN, and a tag made that way triggers no
+# `push: tags` run, so the Release workflow finishing is the trigger: the
+# resolve job looks for a vX.Y.Z tag on the commit it ran on.
 on:
-  push:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
     branches: [master]
-    paths:
-      - 'docker/**'
-      - '.github/workflows/build-image.yaml'
-  pull_request:
-    paths:
-      - 'docker/**'
-      - '.github/workflows/build-image.yaml'
+  push:
+    tags: ['v*.*.*']  # a tag pushed by hand or with a token that triggers workflows
   workflow_dispatch:
-  # Called by release.yaml when release-please cuts a release
-  workflow_call:
     inputs:
       version:
-        description: Release version without the leading v (e.g. 1.0.0)
+        description: Rebuild a release (e.g. 1.0.0) from the selected ref; leave empty for latest and sha tags only
         type: string
-        required: true
+        required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  resolve:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+    outputs:
+      build: ${{ steps.v.outputs.build }}
+      version: ${{ steps.v.outputs.version }}
+      ref: ${{ steps.v.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      # Release run: build only if it tagged this commit. Tag push: the tag.
+      # Manual run: the optional version input.
+      - id: v
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          case "$EVENT" in
+            workflow_run) tag=$(git tag --points-at HEAD --list 'v*.*.*' | sort -V | tail -n 1) ;;
+            push)         tag="$REF_NAME" ;;
+            *)            tag="${INPUT_VERSION:+v${INPUT_VERSION#v}}" ;;
+          esac
+          if [ "$EVENT" = workflow_run ] && [ -z "$tag" ]; then
+            echo "No release tag on $(git rev-parse --short HEAD); nothing to build"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo "build=true"
+            echo "version=${tag#v}"
+            echo "ref=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Building ${tag:-latest} from $(git rev-parse --short HEAD)"
+
   build:
     name: Build and push
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -44,7 +88,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -55,14 +98,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # Read the commit and ref from the checkout, not the workflow_run event
+          context: git
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=v${{ inputs.version }},enable=${{ inputs.version != '' }}
-            type=semver,pattern={{major}}.{{minor}},value=v${{ inputs.version }},enable=${{ inputs.version != '' }}
+            type=raw,value=latest,enable=${{ needs.resolve.outputs.version != '' || github.ref == 'refs/heads/master' }}
+            type=semver,pattern={{version}},value=v${{ needs.resolve.outputs.version }},enable=${{ needs.resolve.outputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=v${{ needs.resolve.outputs.version }},enable=${{ needs.resolve.outputs.version != '' }}
             type=sha
 
-      # Pull requests build both platforms to catch breakage but push nothing
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
@@ -70,9 +114,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}/{1}:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           # No provenance/SBOM child manifests, so the prune step only has the
           # amd64/arm64 children of each multi-arch image to reconcile
           provenance: false
@@ -81,7 +125,6 @@ jobs:
       # Keep `latest`, version tags and the 4 most recent sha-… tags; delete the
       # rest. `buildcache` is excluded because cache-from/cache-to depend on it.
       - name: Prune old image versions
-        if: github.event_name != 'pull_request'
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

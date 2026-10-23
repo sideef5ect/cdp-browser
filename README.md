@@ -112,7 +112,7 @@ docker compose -f docker/docker-compose.yaml up -d
 
 | Tag | Points to |
 |---|---|
-| `latest` | Latest build of `master` |
+| `latest` | Latest release, or the latest manual build of `master` |
 | `1.0.0`, `1.0` | GitHub release `v1.0.0` |
 | `sha-<commit>` | A specific commit; the 4 most recent are kept |
 
@@ -192,9 +192,9 @@ cdp-browser/
 │   └── plugin.json           # plugin metadata and version
 ├── .github/
 │   ├── workflows/
-│   │   ├── build-image.yaml  # multi-arch build, push to GHCR, prune old versions
+│   │   ├── build-image.yaml  # on each release tag: multi-arch build, push to GHCR, prune
 │   │   ├── lint.yaml         # uv sync, Playwright pin check, ruff
-│   │   └── release.yaml      # release-please: release PR, tag, GitHub release, versioned image
+│   │   └── release.yaml      # release-please: release PR, tag, GitHub release
 │   ├── ISSUE_TEMPLATE/       # bug report and feature request forms
 │   ├── pull_request_template.md
 │   └── dependabot.yml        # weekly updates for actions and the base image
@@ -242,7 +242,7 @@ uv run skills/browser/test/focus_test.py
 
 It reads the helper straight from `SKILL.md`, so it tests the code the skill tells agents to paste.
 
-Releases are cut by [release-please](https://github.com/googleapis/release-please-action) from Conventional Commits on `master`: it keeps a release PR open that bumps `CHANGELOG.md` and the version in `.claude-plugin/plugin.json`. Merging that PR tags `vX.Y.Z`, creates the GitHub release, and publishes the `X.Y.Z` and `X.Y` image tags.
+Releases are cut by [release-please](https://github.com/googleapis/release-please-action) from Conventional Commits on `master`: it keeps a release PR open that bumps `CHANGELOG.md` and the version in `.claude-plugin/plugin.json`. Merging that PR tags `vX.Y.Z` and creates the GitHub release. The Build Image workflow then runs on its own and publishes the `X.Y.Z`, `X.Y`, and `latest` image tags.
 
 ## Contributing
 

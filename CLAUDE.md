@@ -27,11 +27,11 @@ An agent skill for driving a persistent browser over CDP with Playwright, plus a
 
 ## Git
 
-- **`master` is the production branch.** A push to `master` that touches `docker/` or the workflow builds and pushes `latest` and `sha-<commit>`.
-- Releases come from release-please (`.github/workflows/release.yaml`, `release-please-config.json`, `.release-please-manifest.json`). Never bump `version` in `.claude-plugin/plugin.json`, edit `CHANGELOG.md`, or push `v*` tags by hand: the release PR does all three. Merging it tags `vX.Y.Z`, creates the GitHub release, and calls `build-image.yaml` to publish `X.Y.Z` and `X.Y`.
+- **`master` is the production branch.** Pushes and pull requests never build the image. `build-image.yaml` is its own workflow and runs in three cases: after a successful Release run on `master` that left a `vX.Y.Z` tag on its commit (`workflow_run`; runs without a tag skip the build), on a `v*.*.*` tag pushed by hand, or by hand with `gh workflow run build-image.yaml` (optional `version` input to rebuild a release). `release.yaml` has no build job. Tags made by release-please with `GITHUB_TOKEN` trigger no `push: tags` run, so the `workflow_run` trigger is what builds releases; never remove it.
+- Releases come from release-please (`.github/workflows/release.yaml`, `release-please-config.json`, `.release-please-manifest.json`). Never bump `version` in `.claude-plugin/plugin.json`, edit `CHANGELOG.md`, or push `v*` tags by hand: the release PR does all three. Merging it tags `vX.Y.Z` and creates the GitHub release; Build Image then publishes `X.Y.Z`, `X.Y`, and `latest`.
 - `feat:` bumps minor, `fix:`/`docs:`/`chore:` bump patch, `!` or `BREAKING CHANGE:` bumps minor while `bump-major-for-breaking-change` is false. Force a version with an empty commit whose body has `Release-As: X.Y.Z`.
 - The release workflow uses only `GITHUB_TOKEN`; never add a personal access token secret. The release PR is approved and merged by hand. Because it is opened with `GITHUB_TOKEN`, its checks do not run on their own; the content was already checked on `master`.
-- Pull requests build both platforms and push nothing.
+- Image changes in a pull request are not built by CI: build and smoke-test them locally before merging.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `ci:`).
 
 ## Project Structure
@@ -43,8 +43,8 @@ An agent skill for driving a persistent browser over CDP with Playwright, plus a
 | `skills/browser/test/focus_test.py` | macOS test that the helper never raises Chrome; reads the helper from `SKILL.md` |
 | `docker/` | `Dockerfile` (Ubuntu 22.04, Playwright Chromium and WebKit, Xvfb, fluxbox, x11vnc, socat) `entrypoint.sh` (start order, stale lock cleanup, shutdown) and `docker-compose.yaml` (host-network run of the published image) |
 | `.claude-plugin/` | `plugin.json` (name, version) and `marketplace.json`, so `/plugin marketplace add sideef5ect/cdp-browser` installs the skill |
-| `.github/workflows/build-image.yaml` | Multi-arch build (amd64, arm64), push to GHCR, prune old versions; also called by `release.yaml` with a `version` input |
-| `.github/workflows/release.yaml` | release-please: release PR, `vX.Y.Z` tag, GitHub release, then the versioned image build |
+| `.github/workflows/build-image.yaml` | Multi-arch build (amd64, arm64), push to GHCR, prune old versions; runs after a Release run that tagged, on a pushed tag, or by hand |
+| `.github/workflows/release.yaml` | release-please: release PR, `vX.Y.Z` tag, GitHub release |
 | `release-please-config.json`, `.release-please-manifest.json` | release-please settings (changelog sections, `plugin.json` version as an extra file) and the last released version |
 | `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` | Bug and feature issue forms (blank issues off, security reports routed to advisories) and the PR checklist |
 | `.github/dependabot.yml` | Weekly update PRs for actions (`ci:` prefix) and the `docker/` base image (`build:` prefix); Playwright stays a manual bump |

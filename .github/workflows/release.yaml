@@ -15,16 +15,13 @@ permissions:
   contents: write      # Create releases and tags
   pull-requests: write # Open and update the release PR
   issues: write        # Create labels
-  packages: write      # Push the release image (build-image job)
 
 jobs:
   # Opens or updates the release PR with GITHUB_TOKEN. Approve and merge it by
   # hand; the run triggered by that merge tags vX.Y.Z and creates the release.
+  # Build Image then runs on its own (workflow_run) and publishes the image.
   release-please:
     runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      version: ${{ steps.release.outputs.version }}
     steps:
       - id: release
         uses: googleapis/release-please-action@v4
@@ -32,12 +29,3 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           token: ${{ github.token }}
-
-  # A release made with GITHUB_TOKEN triggers no other workflow, so the
-  # versioned image is built here instead of on a tag push.
-  build-image:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
-    uses: ./.github/workflows/build-image.yaml
-    with:
-      version: ${{ needs.release-please.outputs.version }}
