@@ -2,16 +2,22 @@ name: Build Image
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [master]
     paths:
-      - 'image/**'
+      - 'docker/**'
       - '.github/workflows/build-image.yaml'
   pull_request:
     paths:
-      - 'image/**'
+      - 'docker/**'
       - '.github/workflows/build-image.yaml'
   workflow_dispatch:
+  # Called by release.yaml when release-please cuts a release
+  workflow_call:
+    inputs:
+      version:
+        description: Release version without the leading v (e.g. 1.0.0)
+        type: string
+        required: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,15 +58,15 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}},value=v${{ inputs.version }},enable=${{ inputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=v${{ inputs.version }},enable=${{ inputs.version != '' }}
             type=sha
 
       # Pull requests build both platforms to catch breakage but push nothing
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          context: image
+          context: docker
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
