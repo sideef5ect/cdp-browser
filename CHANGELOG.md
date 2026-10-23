@@ -1,0 +1,31 @@
+# Changelog
+
+## 1.0.0 (2026-10-23)
+
+
+### Features
+
+* **docker:** move image to docker/ and use ports 19222/15900 ([20c1d2a](https://github.com/sideef5ect/cdp-browser/commit/20c1d2a7b7f8f28a0dc8644ce8266ddf18a5d374))
+* initial release of cdp-browser skill and image ([ecb7657](https://github.com/sideef5ect/cdp-browser/commit/ecb76574d2722f8fc821eb9ef07c061d0a7959c8))
+
+
+### Documentation
+
+* update README and skill docs for new ports ([2abff87](https://github.com/sideef5ect/cdp-browser/commit/2abff87b167c3a5eca00908681dfddee8937d61b))
+
+
+### Miscellaneous
+
+* add contributing guide, security policy and templates ([3925608](https://github.com/sideef5ect/cdp-browser/commit/3925608b9764d75eb98102f2327d0e26da1fca70))
+* release 1.0.0 ([65950d7](https://github.com/sideef5ect/cdp-browser/commit/65950d73c592504f2541f9d731b0daff5924fff5))
+
+
+### Build System
+
+* add uv project, playwright version check and lint ([b94e714](https://github.com/sideef5ect/cdp-browser/commit/b94e714e13908433b9a0ca0175573a1eac5272ba))
+
+
+### Continuous Integration
+
+* add release-please and rework image build ([0623833](https://github.com/sideef5ect/cdp-browser/commit/062383341737f56e454495bf3961021a40746ed3))
+* release with GITHUB_TOKEN only and manual PR approval ([6a24fdb](https://github.com/sideef5ect/cdp-browser/commit/6a24fdb0e1fb756d3378082d6dff0cc715415d65))
