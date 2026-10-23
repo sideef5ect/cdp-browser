@@ -1,25 +1,62 @@
 # cdp-browser
 
+[![Release](https://img.shields.io/github/v/release/sideef5ect/cdp-browser)](https://github.com/sideef5ect/cdp-browser/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/sideef5ect/cdp-browser/build-image.yaml?branch=master&label=build)](https://github.com/sideef5ect/cdp-browser/actions/workflows/build-image.yaml)
+[![Image](https://img.shields.io/badge/ghcr.io-cdp--browser-2496ED?logo=docker&logoColor=white)](https://github.com/sideef5ect/cdp-browser/pkgs/container/cdp-browser)
+[![Platforms](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-555)](#option-a-docker)
+[![License](https://img.shields.io/github/license/sideef5ect/cdp-browser)](LICENSE)
+
 Give a coding agent a real, persistent browser over the Chrome DevTools Protocol (CDP).
+
+![cdp-browser architecture: a coding agent reads SKILL.md and runs a Playwright script that connects over CDP to either a Docker container on localhost:19222 (socat, headed Chromium on Xvfb, x11vnc on 15900, WebKit, profile volumes) or host Chrome on localhost:9222](docs/assets/architecture.svg)
 
 The repo has two parts that work together:
 
 - **An agent skill** (`skills/browser/`) that teaches Claude Code, Codex, or any agent that reads `SKILL.md` how to drive a browser through Playwright's `connect_over_cdp()`: fetch text and HTML, take screenshots, fill forms, upload files
 - **A browser to drive**, in either of two forms: a Docker image with a headed Chromium on a virtual display, or your own Chrome started with remote debugging on
 
-Both expose the same endpoint, `http://localhost:9222`, so the skill and your scripts don't change when you switch between them.
+Both speak the same CDP API: the container on `http://localhost:19222`, host Chrome on its usual `http://localhost:9222`. Separate ports let both run at once, and switching backends only changes the URL.
+
+| Container (`localhost:19222`) | Host Chrome (`localhost:9222`) |
+|---|---|
+| ![The container's full 1920x1080 virtual display, seen over VNC: headed Chromium with its tab strip and address bar, showing google.com loaded by an agent script over CDP](docs/assets/container-chromium-google.png) | ![A host Chrome window on macOS showing YouTube search results for playwright, the browser an agent drives when it needs real logins](docs/assets/host-chrome-youtube.png) |
+
+## Quick Start
+
+Install the skill; it carries the setup docs, so the agent starts a browser itself when none is running.
+
+**Claude Code**:
+
+```text
+/plugin marketplace add sideef5ect/cdp-browser
+/plugin install cdp-browser@cdp-browser
+```
+
+**Codex**:
+
+```bash
+git clone https://github.com/sideef5ect/cdp-browser
+mkdir -p ~/.agents/skills && cp -r cdp-browser/skills/browser ~/.agents/skills/browser
+```
+
+Then ask the agent: "Take a screenshot of example.com". Other agents and starting a browser by hand are covered in [Usage](#usage).
 
 ## Features
 
-| Feature | What it means |
-|---|---|
-| Persistent session | One long-lived browser. Cookies and logins survive restarts, so a script connects to it instead of launching a fresh browser each time |
-| Two backends, one URL | Docker container for isolation and servers; host Chrome when you need your real logins |
-| No focus stealing | The skill's `background_tab()` helper opens tabs in the background, keeps popups and `target=_blank` links in the same tab, and suppresses "Leave this page?" dialogs, so host Chrome never jumps in front of you while an agent works |
-| Watch it live | VNC into the container's display to see what the agent is doing, or to log in by hand once |
-| Multi-arch image | `linux/amd64` and `linux/arm64` on GHCR, built by GitHub Actions |
-| WebKit included | For H.264 video on ARM64 Linux, where Chromium has no proprietary codecs |
-| Tested helper | A macOS focus test runs popups, `window.open()` and `beforeunload` forms against real Chrome and fails if Chrome ever becomes frontmost |
+Each item is prefixed with the milestone it belongs to. Checked items are implemented; unchecked items are planned.
+
+- [x] **(v1.0)** Persistent session: one long-lived browser whose cookies and logins survive restarts, so a script connects to it instead of launching a fresh browser each time
+- [x] **(v1.0)** Two backends, one API: a Docker container for isolation and servers (`localhost:19222`), or host Chrome when you need your real logins (`localhost:9222`), side by side without port conflicts
+- [x] **(v1.0)** No focus stealing: `background_tab()` opens tabs in the background, keeps popups and `target=_blank` links in the same tab, and suppresses "Leave this page?" dialogs, so host Chrome never jumps in front of you
+- [x] **(v1.0)** Watch it live: VNC into the container's display to see what the agent is doing, or to log in by hand once
+- [x] **(v1.0)** WebKit included, for H.264 video on ARM64 Linux, where Chromium has no proprietary codecs
+- [x] **(v1.0)** Pre-built image for `linux/amd64` and `linux/arm64`: pull it from GHCR, no local build needed
+- [x] **(v1.0)** Skill installs as a Claude Code plugin, or by copying into Codex (`~/.agents/skills`) or any agent that reads `SKILL.md`
+- [ ] **(v1.1)** Container health check on `/json/version`, so `docker ps` and Compose report when CDP is up
+- [ ] **(v1.1)** Host Chrome setup for Windows
+- [ ] **(v1.2)** Browser viewer in a web page (noVNC), so watching needs no VNC client
+- [ ] **(v1.2)** Token-protected CDP endpoint, for running the container on a shared or remote host
+- [ ] **(v1.2)** Headless mode switch, to run without Xvfb and VNC where nobody needs to watch
 
 ## Usage
 
@@ -59,7 +96,7 @@ Run it:
 
 ```bash
 docker run -d \
-  -p 127.0.0.1:9222:9222 -p 127.0.0.1:5900:5900 \
+  -p 127.0.0.1:19222:19222 -p 127.0.0.1:15900:15900 \
   -v browser-chrome-profile:/app/chrome_profile \
   -v browser-webkit-profile:/app/webkit_profile \
   --shm-size=1g \
@@ -70,13 +107,13 @@ docker run -d \
 Or with Compose, on the host network so the browser can reach dev servers on `localhost`:
 
 ```bash
-docker compose up -d
+docker compose -f docker/docker-compose.yaml up -d
 ```
 
 | Tag | Points to |
 |---|---|
-| `latest` | Latest build of `main` |
-| `1.0.0`, `1.0` | Release tag `v1.0.0` |
+| `latest` | Latest build of `master` |
+| `1.0.0`, `1.0` | GitHub release `v1.0.0` |
 | `sha-<commit>` | A specific commit; the 4 most recent are kept |
 
 #### Option B: Host Chrome
@@ -98,14 +135,15 @@ On Linux, run `google-chrome` with the same flags. Logins made in this window pe
 ### Connect
 
 ```bash
-curl -s http://localhost:9222/json/version
+curl -s http://localhost:19222/json/version   # container
+curl -s http://localhost:9222/json/version    # host Chrome
 ```
 
 ```python
 from playwright.sync_api import sync_playwright
 
 with sync_playwright() as p:
-    browser = p.chromium.connect_over_cdp("http://localhost:9222")
+    browser = p.chromium.connect_over_cdp("http://localhost:19222")  # host Chrome: 9222
     page = browser.contexts[0].new_page()
     page.goto("https://example.com")
     print(page.title())
@@ -115,23 +153,7 @@ For anything that may run against host Chrome, use the `background_tab()` helper
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    agent["Coding agent<br>(Claude Code, Codex)"] -- reads --> skill["skills/browser<br>SKILL.md"]
-    agent -- runs --> script["Playwright script<br>connect_over_cdp()"]
-    script -- "CDP :9222" --> choice{{backend}}
-    choice --> container
-    choice --> host["Host Chrome<br>--remote-debugging-port=9222<br>own --user-data-dir"]
-    subgraph container["Docker container"]
-        socat["socat<br>0.0.0.0:9222 → :9223"] --> chromium["Playwright Chromium<br>CDP :9223"]
-        chromium --> xvfb["Xvfb :99 + fluxbox"]
-        vnc["x11vnc :5900"] --> xvfb
-        webkit["WebKit<br>(docker exec)"]
-        chromium --- profile[("/app/chrome_profile")]
-        webkit --- wprofile[("/app/webkit_profile")]
-    end
-    viewer["VNC viewer"] -- ":5900" --> vnc
-```
+The diagram at the top shows how the parts connect; this section lists what each part does.
 
 ### Components
 
@@ -140,9 +162,9 @@ flowchart LR
 | `skills/browser/SKILL.md` | Usage for the agent: which backend, the ready check, the focus rules, the `background_tab()` helper, recipes, and an index of the setup docs it loads only when needed |
 | `background_tab()` | Opens a tab with `Target.createTarget` (`background: true, focus: false`), injects an init script that blocks popups and `beforeunload`, answers dialogs, and closes the tab and any child it opened on exit |
 | Xvfb + fluxbox | A 1920x1080 virtual display and window manager, so Chromium runs headed rather than headless, the same as a desktop browser |
-| Playwright Chromium | The browser, with remote debugging on internal port 9223 and the profile on a volume |
-| socat | Chromium only serves DevTools to localhost, so socat forwards `0.0.0.0:9222` to it, making CDP reachable from outside the container |
-| x11vnc | Mirrors the virtual display on port 5900 |
+| Playwright Chromium | The browser, with remote debugging on internal port 19223 and the profile on a volume |
+| socat | Headed Chromium ignores `--remote-debugging-address` and listens on `127.0.0.1` only, which `docker -p` cannot reach. socat forwards `0.0.0.0:19222` to it, making CDP reachable from outside the container |
+| x11vnc | Mirrors the virtual display on port 15900 |
 | WebKit | Installed alongside for H.264 on ARM64; it has no CDP, so scripts run inside the container with `docker exec` (see [`docs/webkit.md`](skills/browser/docs/webkit.md)) |
 | `entrypoint.sh` | Clears stale X and profile locks from an unclean shutdown, starts each process in order, waits for CDP, and stops them all on `SIGTERM` |
 
@@ -150,8 +172,8 @@ flowchart LR
 
 | Port | Service |
 |---|---|
-| 9222 | CDP |
-| 5900 | VNC (password from `VNC_PASSWORD`, default `changeme`) |
+| 19222 | CDP (`CDP_PORT`) |
+| 15900 | VNC (`VNC_PORT`; password from `VNC_PASSWORD`, default `changeme`) |
 
 | Volume | Purpose |
 |---|---|
@@ -159,7 +181,7 @@ flowchart LR
 | `/app/webkit_profile` | WebKit persistent context |
 
 > [!WARNING]
-> CDP gives full control of the browser, including every logged-in session in its profile, with no authentication. Publish the ports on `127.0.0.1` only. With `--network host` on Linux, port 9222 listens on every interface, so firewall it or use port mapping instead. Change `VNC_PASSWORD` from the default.
+> CDP gives full control of the browser, including every logged-in session in its profile, with no authentication. Publish the ports on `127.0.0.1` only. With `--network host` on Linux, ports 19222 and 15900 listen on every interface, so firewall it or use port mapping instead. Change `VNC_PASSWORD` from the default.
 
 ## Project Structure
 
@@ -168,11 +190,18 @@ cdp-browser/
 ├── .claude-plugin/
 │   ├── marketplace.json      # lets /plugin marketplace add install from this repo
 │   └── plugin.json           # plugin metadata and version
-├── .github/workflows/
-│   └── build-image.yaml      # multi-arch build, push to GHCR, prune old versions
-├── image/
+├── .github/
+│   ├── workflows/
+│   │   ├── build-image.yaml  # multi-arch build, push to GHCR, prune old versions
+│   │   ├── lint.yaml         # uv sync, Playwright pin check, ruff
+│   │   └── release.yaml      # release-please: release PR, tag, GitHub release, versioned image
+│   ├── ISSUE_TEMPLATE/       # bug report and feature request forms
+│   ├── pull_request_template.md
+│   └── dependabot.yml        # weekly updates for actions and the base image
+├── docker/
 │   ├── Dockerfile            # Ubuntu 22.04 + Playwright Chromium/WebKit + Xvfb/VNC/socat
-│   └── entrypoint.sh         # process startup and shutdown
+│   ├── entrypoint.sh         # process startup and shutdown
+│   └── docker-compose.yaml   # host-network run of the published image
 ├── skills/browser/
 │   ├── SKILL.md              # the agent skill: usage, focus rules, helper, recipes, docs index
 │   ├── docs/
@@ -180,7 +209,16 @@ cdp-browser/
 │   │   ├── setup-host-chrome.md  # host Chrome with remote debugging (macOS, Linux)
 │   │   └── webkit.md             # WebKit recipes (H.264 on ARM64)
 │   └── test/focus_test.py    # macOS focus test for background_tab()
-├── compose.yaml
+├── scripts/check_playwright_version.py  # pyproject and Dockerfile pin the same Playwright
+├── docs/assets/              # README diagrams (SVG + generator) and screenshots
+├── CLAUDE.md                 # contributor guide for coding agents
+├── CONTRIBUTING.md           # dev setup, tests, commit format
+├── SECURITY.md               # how to report a vulnerability privately
+├── pyproject.toml            # uv dev environment: Playwright client, ruff
+├── uv.lock
+├── .python-version           # 3.14
+├── release-please-config.json
+├── .release-please-manifest.json
 ├── LICENSE
 └── README.md
 ```
@@ -190,19 +228,25 @@ cdp-browser/
 Build the image locally:
 
 ```bash
-docker build -t cdp-browser image/
-docker build --build-arg PLAYWRIGHT_VERSION=1.64.1 -t cdp-browser image/
+docker build -t cdp-browser docker/
+docker build --build-arg PLAYWRIGHT_VERSION=1.64.1 -t cdp-browser docker/
 ```
+
+Set up the Python environment with `uv sync`: it uses Python 3.14 from `.python-version` and the Playwright client pinned to the image's version.
 
 Run the focus test on macOS, with host Chrome started as in Option B and another app in front:
 
 ```bash
-uv run --with playwright python skills/browser/test/focus_test.py
+uv run skills/browser/test/focus_test.py
 ```
 
 It reads the helper straight from `SKILL.md`, so it tests the code the skill tells agents to paste.
 
-Release: bump `version` in `.claude-plugin/plugin.json`, then tag `vX.Y.Z` and push the tag; CI publishes the matching image tags.
+Releases are cut by [release-please](https://github.com/googleapis/release-please-action) from Conventional Commits on `master`: it keeps a release PR open that bumps `CHANGELOG.md` and the version in `.claude-plugin/plugin.json`. Merging that PR tags `vX.Y.Z`, creates the GitHub release, and publishes the `X.Y.Z` and `X.Y` image tags.
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, tests, and commit format, and [SECURITY.md](SECURITY.md) to report a vulnerability privately.
 
 ## License
 

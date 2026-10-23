@@ -5,20 +5,23 @@ description: "Use this skill to control a browser. Trigger on: 'browser', 'fetch
 
 # Browser Automation
 
-Control a persistent browser via CDP using Playwright. Two backends, same CDP URL (`http://localhost:9222`):
+Control a persistent browser via CDP using Playwright. Two backends, same API, each on its own port so both can run at once:
 
-| Backend | When | Focus risk | Setup |
-|---------|------|------------|-------|
-| Docker container | Default; devcontainers, scraping | None (virtual display) | [docs/setup-container.md](docs/setup-container.md) |
-| Host Chrome | Need the user's real logins, or no Docker | **High**: Chrome is on the user's desktop | [docs/setup-host-chrome.md](docs/setup-host-chrome.md) |
+| Backend | CDP URL | When | Focus risk | Setup |
+|---------|---------|------|------------|-------|
+| Docker container | `http://localhost:19222` | Default; devcontainers, scraping | None (virtual display) | [docs/setup-container.md](docs/setup-container.md) |
+| Host Chrome | `http://localhost:9222` | Need the user's real logins, or no Docker | **High**: Chrome is on the user's desktop | [docs/setup-host-chrome.md](docs/setup-host-chrome.md) |
 
 ## Check First
 
 ```bash
-curl -s http://localhost:9222/json/version
+curl -s http://localhost:19222/json/version   # container
+curl -s http://localhost:9222/json/version    # host Chrome
 ```
 
-If it answers, connect. If not, start a backend from its setup doc. Never kill or restart a Chrome the user is using without asking.
+Use whichever answers, and set `CDP_URL` in the helper to it. If neither does, start a backend from its setup doc. Never kill or restart a Chrome the user is using without asking.
+
+Run scripts with `uv run --with playwright script.py` when `playwright` is not installed. Only the client is needed: `connect_over_cdp()` drives the running browser, so skip `playwright install`.
 
 ## Don't Steal Focus
 
@@ -43,7 +46,7 @@ from contextlib import contextmanager
 
 from playwright.sync_api import Error as PlaywrightError, sync_playwright
 
-CDP_URL = "http://localhost:9222"
+CDP_URL = "http://localhost:19222"  # container; host Chrome is http://localhost:9222
 
 # A popup or a "Leave this page?" dialog raises Chrome even from a background tab, and
 # answering or closing it after is too late. So _blank links and window.open() load in

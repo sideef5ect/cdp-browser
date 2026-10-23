@@ -4,7 +4,7 @@ Runs each case in a background tab of the Chrome at --cdp, recording the frontmo
 during the case and after its tab closes, and checks the tab count is back to the start.
 The helper is read from SKILL.md, so this tests the code the skill tells scripts to paste.
 
-    uv run --with playwright python test/focus_test.py [--cdp URL] [--app NAME] [--known-limit]
+    uv run skills/browser/test/focus_test.py [--cdp URL] [--app NAME] [--known-limit]
 
 --app is the app that should keep focus (default: the frontmost app at start, which
 must not be Chrome). A passing run never changes focus; the app is re-activated only

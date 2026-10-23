@@ -1,8 +1,8 @@
 # Setup: Docker Container
 
-A headed Chromium on a virtual display, with CDP on port 9222 and VNC on 5900. Use it by default: it never touches the user's desktop.
+A headed Chromium on a virtual display, with CDP on port 19222 and VNC on 15900. Use it by default: it never touches the user's desktop. The ports are off Chrome's usual 9222 and VNC's 5900, so the container and a host Chrome run side by side, even on the host network.
 
-Pre-built image on GHCR (public, no auth needed), built from `image/` in [sideef5ect/cdp-browser](https://github.com/sideef5ect/cdp-browser):
+Pre-built image on GHCR (public, no auth needed), built from `docker/` in [sideef5ect/cdp-browser](https://github.com/sideef5ect/cdp-browser):
 
 ```text
 ghcr.io/sideef5ect/cdp-browser:latest
@@ -24,7 +24,7 @@ docker run -d \
   ghcr.io/sideef5ect/cdp-browser:latest
 ```
 
-On Linux this listens on every interface. Firewall port 9222, or use port mapping below.
+On Linux this listens on every interface. Firewall ports 19222 and 15900, or use port mapping below.
 
 ### Port Mapping
 
@@ -32,8 +32,8 @@ Use this when host network is not available (Docker Desktop without host network
 
 ```bash
 docker run -d \
-  -p 127.0.0.1:9222:9222 \
-  -p 127.0.0.1:15900:5900 \
+  -p 127.0.0.1:19222:19222 \
+  -p 127.0.0.1:15900:15900 \
   -v browser-chrome-profile:/app/chrome_profile \
   -v browser-webkit-profile:/app/webkit_profile \
   --shm-size=1g \
@@ -45,10 +45,12 @@ With port mapping, the browser reaches host services at `host.docker.internal` i
 
 ## Ports and Volumes
 
-| Port | Service | Access |
-|------|---------|--------|
-| 9222 | CDP | `localhost:9222` |
-| 5900 | VNC | `localhost:5900` (host network) / `localhost:15900` (port mapping) |
+| Port | Env var | Service |
+|------|---------|---------|
+| 19222 | `CDP_PORT` | CDP, forwarded by socat to Chromium's loopback-only port `CHROME_CDP_PORT` (19223) |
+| 15900 | `VNC_PORT` | VNC |
+
+To use other ports, set the env vars and publish the same numbers, e.g. `-e CDP_PORT=29222 -p 127.0.0.1:29222:29222`.
 
 | Volume | Container Path | Purpose |
 |--------|----------------|---------|
@@ -58,7 +60,7 @@ With port mapping, the browser reaches host services at `host.docker.internal` i
 ## Verify
 
 ```bash
-curl -s http://localhost:9222/json/version
+curl -s http://localhost:19222/json/version
 ```
 
 The container takes a few seconds to start Xvfb, VNC and Chromium. `docker logs browser-cdp` ends with `Browser environment ready!` once CDP is up.
@@ -68,8 +70,7 @@ The container takes a few seconds to start Xvfb, VNC and Chromium. `docker logs 
 Watch what the browser is doing, or log in to a site by hand once so the session is saved in the profile. Default password `changeme`; set another with `-e VNC_PASSWORD=...` on `docker run`.
 
 ```bash
-open vnc://localhost:5900     # host network
-open vnc://localhost:15900    # port mapping
+open vnc://localhost:15900
 ```
 
 ## Container Management
@@ -93,5 +94,5 @@ docker rm -f browser-cdp && docker volume rm browser-chrome-profile browser-webk
 ## Build Locally
 
 ```bash
-docker build -t cdp-browser image/
+docker build -t cdp-browser docker/
 ```
