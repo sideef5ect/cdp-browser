@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.2](https://github.com/sideef5ect/cdp-browser/compare/v1.0.1...v1.0.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* **ci:** tag the image from the resolved commit, not a detached HEAD ([406bcf3](https://github.com/sideef5ect/cdp-browser/commit/406bcf3d8a6027aae6b65554cb62325642445865))
+
+
+### Documentation
+
+* drop the License section from the README ([9569ba1](https://github.com/sideef5ect/cdp-browser/commit/9569ba1a15a4a054ec4bd157a9749b6174ba72d6))
+* refresh the license badge and host Chrome screenshot ([a6a4088](https://github.com/sideef5ect/cdp-browser/commit/a6a4088ae757ebd9606f6e3c169df99fe4bbd314))
+
+
+### Continuous Integration
+
+* remove the lint workflow and Python Dependabot updates ([e242e52](https://github.com/sideef5ect/cdp-browser/commit/e242e52a96186ca94559460ae9cf511b2367d758))
+
 ## [1.0.1](https://github.com/sideef5ect/cdp-browser/compare/v1.0.0...v1.0.1) (2026-10-23)
 
 
