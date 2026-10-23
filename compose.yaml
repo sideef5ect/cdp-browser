@@ -1,0 +1,19 @@
+# docker compose up -d
+# CDP: http://localhost:9222 | VNC: vnc://localhost:5900 (password from VNC_PASSWORD)
+services:
+  browser:
+    image: ghcr.io/sideef5ect/cdp-browser:latest
+    build: ./image
+    container_name: browser-cdp
+    network_mode: host
+    environment:
+      VNC_PASSWORD: ${VNC_PASSWORD:-changeme}
+    shm_size: 1gb
+    volumes:
+      - chrome-profile:/app/chrome_profile
+      - webkit-profile:/app/webkit_profile
+    restart: unless-stopped
+
+volumes:
+  chrome-profile:
+  webkit-profile:

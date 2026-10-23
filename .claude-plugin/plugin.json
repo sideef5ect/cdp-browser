@@ -1,0 +1,10 @@
+{
+  "name": "cdp-browser",
+  "description": "Drive a persistent browser over CDP with Playwright, in Docker or host Chrome, without stealing desktop focus",
+  "version": "1.0.0",
+  "author": { "name": "sideef5ect" },
+  "homepage": "https://github.com/sideef5ect/cdp-browser",
+  "repository": "https://github.com/sideef5ect/cdp-browser",
+  "license": "MIT",
+  "keywords": ["browser", "playwright", "cdp", "chrome", "docker", "scraping", "screenshot"]
+}

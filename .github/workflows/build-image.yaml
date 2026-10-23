@@ -1,0 +1,87 @@
+name: Build Image
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'image/**'
+      - '.github/workflows/build-image.yaml'
+  pull_request:
+    paths:
+      - 'image/**'
+      - '.github/workflows/build-image.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build and push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      # Pull requests build both platforms to catch breakage but push nothing
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: image
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}/{1}:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          # No provenance/SBOM child manifests, so the prune step only has the
+          # amd64/arm64 children of each multi-arch image to reconcile
+          provenance: false
+          sbom: false
+
+      # Keep `latest`, version tags and the 4 most recent sha-… tags; delete the
+      # rest. `buildcache` is excluded because cache-from/cache-to depend on it.
+      - name: Prune old image versions
+        if: github.event_name != 'pull_request'
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exclude-tags: latest,buildcache,v*,*.*
+          keep-n-tagged: 4
+          delete-untagged: true
+          delete-ghost-images: true
+          delete-partial-images: true
+          delete-orphaned-images: true

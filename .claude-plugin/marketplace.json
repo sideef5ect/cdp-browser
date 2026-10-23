@@ -1,0 +1,13 @@
+{
+  "name": "cdp-browser",
+  "description": "Browser automation over CDP: the agent skill, plus a Docker image or host Chrome to drive",
+  "owner": { "name": "sideef5ect" },
+  "plugins": [
+    {
+      "name": "cdp-browser",
+      "source": "./",
+      "description": "Drive a persistent browser over CDP with Playwright, in Docker or host Chrome, without stealing desktop focus",
+      "category": "development"
+    }
+  ]
+}
