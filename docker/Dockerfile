@@ -3,7 +3,7 @@
 # Run:   docker run -d -p 127.0.0.1:19222:19222 -p 127.0.0.1:15900:15900 --name browser-cdp cdp-browser
 # CDP:   localhost:19222 | VNC: localhost:15900
 
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 # Pinned so the Chromium build only changes when this is bumped
 ARG PLAYWRIGHT_VERSION=1.64.1
