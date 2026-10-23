@@ -1,9 +1,9 @@
-# docker compose up -d
-# CDP: http://localhost:9222 | VNC: vnc://localhost:5900 (password from VNC_PASSWORD)
+# docker compose -f docker/docker-compose.yaml up -d
+# CDP: http://localhost:19222 | VNC: vnc://localhost:15900 (password from VNC_PASSWORD)
 services:
   browser:
     image: ghcr.io/sideef5ect/cdp-browser:latest
-    build: ./image
+    build: .
     container_name: browser-cdp
     network_mode: host
     environment:

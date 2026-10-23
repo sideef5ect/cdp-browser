@@ -36,8 +36,8 @@ fluxbox &
 PIDS+=($!)
 sleep 1
 
-echo "[3/5] Starting VNC server on port 5900..."
-x11vnc -display :99 -forever -passwd "${VNC_PASSWORD}" -quiet -bg
+echo "[3/5] Starting VNC server on port ${VNC_PORT}..."
+x11vnc -display :99 -rfbport "${VNC_PORT}" -forever -passwd "${VNC_PASSWORD}" -quiet -bg
 sleep 1
 
 echo "[4/5] Starting Chromium (Playwright) with CDP..."
@@ -55,13 +55,14 @@ if [ -z "$CHROMIUM_PATH" ]; then
 fi
 echo "Using Chromium at: $CHROMIUM_PATH"
 
+# Headed Chromium ignores --remote-debugging-address and only listens on 127.0.0.1,
+# so socat (step 5) exposes it on CDP_PORT for docker -p and other hosts
 $CHROMIUM_PATH \
   --no-sandbox \
   --disable-setuid-sandbox \
   --disable-gpu \
   --disable-dev-shm-usage \
-  --remote-debugging-port=9223 \
-  --remote-debugging-address=0.0.0.0 \
+  --remote-debugging-port="${CHROME_CDP_PORT}" \
   --remote-allow-origins=* \
   --user-data-dir=/app/chrome_profile \
   --disable-background-networking \
@@ -79,8 +80,8 @@ echo ""
 echo "Waiting for Chrome CDP..."
 CDP_READY=false
 for _i in {1..30}; do
-  if curl -s http://localhost:9223/json/version > /dev/null 2>&1; then
-    echo "Chrome CDP is ready on internal port 9223!"
+  if curl -s "http://localhost:${CHROME_CDP_PORT}/json/version" > /dev/null 2>&1; then
+    echo "Chrome CDP is ready on internal port ${CHROME_CDP_PORT}!"
     CDP_READY=true
     break
   fi
@@ -92,8 +93,8 @@ if [ "$CDP_READY" = false ]; then
   exit 1
 fi
 
-echo "[5/5] Starting socat proxy (0.0.0.0:9222 -> localhost:9223)..."
-socat TCP-LISTEN:9222,fork,reuseaddr TCP:localhost:9223 &
+echo "[5/5] Starting socat proxy (0.0.0.0:${CDP_PORT} -> localhost:${CHROME_CDP_PORT})..."
+socat TCP-LISTEN:"${CDP_PORT}",fork,reuseaddr TCP:localhost:"${CHROME_CDP_PORT}" &
 PIDS+=($!)
 
 echo ""
@@ -101,8 +102,8 @@ echo "=========================================="
 echo "  Browser environment ready!"
 echo "=========================================="
 echo ""
-echo "  CDP:  http://localhost:9222"
-echo "  VNC:  vnc://<container-name>.orb.local:5900"
+echo "  CDP:  http://localhost:${CDP_PORT}"
+echo "  VNC:  vnc://localhost:${VNC_PORT}"
 echo ""
 echo "=========================================="
 echo ""

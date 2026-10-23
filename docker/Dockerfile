@@ -1,7 +1,7 @@
 # Ubuntu with VNC + Chromium CDP (via Playwright)
-# Build: docker build -t cdp-browser image/
-# Run:   docker run -d -p 9222:9222 --name browser-cdp cdp-browser
-# CDP:   localhost:9222 | VNC: 5900
+# Build: docker build -t cdp-browser docker/
+# Run:   docker run -d -p 127.0.0.1:19222:19222 -p 127.0.0.1:15900:15900 --name browser-cdp cdp-browser
+# CDP:   localhost:19222 | VNC: localhost:15900
 
 FROM ubuntu:22.04
 
@@ -11,6 +11,12 @@ ARG PLAYWRIGHT_VERSION=1.64.1
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:99
 ENV VNC_PASSWORD=changeme
+
+# Off the usual 9222/5900, so host network mode never collides with a host Chrome
+# or a host VNC server. CHROME_CDP_PORT is Chromium's loopback-only port behind socat.
+ENV CDP_PORT=19222
+ENV CHROME_CDP_PORT=19223
+ENV VNC_PORT=15900
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -38,6 +44,6 @@ RUN chmod +x /entrypoint.sh
 # Chrome profile for CDP mode, WebKit profile for Playwright persistent context
 VOLUME ["/app/chrome_profile", "/app/webkit_profile"]
 
-EXPOSE 5900 9222
+EXPOSE 15900 19222
 
 CMD ["/entrypoint.sh"]
