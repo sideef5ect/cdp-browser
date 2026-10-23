@@ -1,4 +1,5 @@
-# Weekly update PRs for the workflow actions, the Python dev environment, and the image's base image.
+# Weekly update PRs for the workflow actions and the image's base image digest.
+# Playwright is bumped by hand: the Dockerfile, pyproject.toml and uv.lock change together.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -10,14 +11,6 @@ updates:
     groups:
       actions:
         patterns: ["*"]
-  # Playwright bumps land in pyproject.toml and uv.lock only; the Lint check then
-  # fails until ARG PLAYWRIGHT_VERSION in docker/Dockerfile is bumped in the same PR.
-  - package-ecosystem: uv
-    directory: /
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: build
   # Digest updates only (security patches to ubuntu:22.04). A new Ubuntu release
   # breaks Playwright's install-deps until Playwright supports it, so release
   # jumps such as 22.04 -> 24.04 or 26.04 are ignored and done by hand.

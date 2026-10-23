@@ -14,7 +14,7 @@ An agent skill for driving a persistent browser over CDP with Playwright, plus a
 - The image, `docker run` examples, and `docker/docker-compose.yaml` stay in step: the same container name (`browser-cdp`), volume names (`browser-chrome-profile`, `browser-webkit-profile`), ports, and `--shm-size=1g`.
 - Container ports default to `CDP_PORT=19222` and `VNC_PORT=15900` (Chromium itself on loopback `CHROME_CDP_PORT=19223`, exposed by socat). Never move them back to 9222/5900: host network mode would collide with a host Chrome or VNC server. Host Chrome docs keep 9222.
 - The base image is pinned as `ubuntu:22.04@sha256:...`. Dependabot only bumps the digest; a new Ubuntu release is a manual change together with a Playwright version that supports it, rebuilt and smoke-tested before merge.
-- Playwright is pinned twice: `ARG PLAYWRIGHT_VERSION` in `docker/Dockerfile` and `playwright==` in `pyproject.toml`. Change both in one commit, run `uv lock`, rebuild, and rerun the smoke test; `scripts/check_playwright_version.py` fails CI when they differ.
+- Playwright is pinned twice: `ARG PLAYWRIGHT_VERSION` in `docker/Dockerfile` and `playwright==` in `pyproject.toml`. Change both in one commit, run `uv lock`, rebuild, and rerun the smoke test, then `uv run scripts/check_playwright_version.py`. No CI checks this: Dependabot does not update Python dependencies, and there is no lint workflow.
 - `pyproject.toml` is a dev environment only (`package = false`), never a published package. The skill must keep working without it: `SKILL.md` code is pasted into the user's own scripts.
 
 ## Dev Environment
@@ -51,8 +51,7 @@ An agent skill for driving a persistent browser over CDP with Playwright, plus a
 | `.github/dependabot.yml` | Weekly update PRs for actions (`ci:` prefix) and the `docker/` base image (`build:` prefix); Playwright stays a manual bump |
 | `CONTRIBUTING.md`, `SECURITY.md` | Human contributor guide (keep its commands in step with Dev Environment here) and the private vulnerability reporting policy |
 | `pyproject.toml`, `uv.lock`, `.python-version` | uv dev environment: the pinned Playwright client and ruff, Python 3.14 locally, `>=3.11` supported |
-| `scripts/check_playwright_version.py` | Fails when the `pyproject.toml` and Dockerfile Playwright pins differ; run by `lint.yaml` |
-| `.github/workflows/lint.yaml` | On push and PR: `uv sync --locked`, the version check, ruff lint and format |
+| `scripts/check_playwright_version.py` | Local check that the `pyproject.toml` and Dockerfile Playwright pins match |
 | `docs/assets/` | README diagrams (each SVG beside the Python generator that draws it) and the two backend screenshots |
 
 ## Coding Style

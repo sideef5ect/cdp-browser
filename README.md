@@ -193,7 +193,6 @@ cdp-browser/
 ├── .github/
 │   ├── workflows/
 │   │   ├── build-image.yaml  # on each release tag: multi-arch build, push to GHCR, prune
-│   │   ├── lint.yaml         # uv sync, Playwright pin check, ruff
 │   │   └── release.yaml      # release-please: release PR, tag, GitHub release
 │   ├── ISSUE_TEMPLATE/       # bug report and feature request forms
 │   ├── pull_request_template.md

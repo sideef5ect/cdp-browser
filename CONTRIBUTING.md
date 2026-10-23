@@ -15,6 +15,7 @@ Set up the Python environment once. uv reads `.python-version` (3.14) and instal
 
 ```bash
 uv sync
+uv run scripts/check_playwright_version.py   # pyproject and Dockerfile pin the same Playwright
 uv run ruff check . && uv run ruff format --check .
 ```
 
@@ -39,7 +40,7 @@ Building on a Linux host is the closest match to CI. To check both platforms, us
 uv run skills/browser/test/focus_test.py
 ```
 
-- To bump Playwright, change `pyproject.toml` and `ARG PLAYWRIGHT_VERSION` in `docker/Dockerfile` together, run `uv lock`, and rebuild; CI fails if the two differ
+- To bump Playwright, change `pyproject.toml` and `ARG PLAYWRIGHT_VERSION` in `docker/Dockerfile` together, run `uv lock`, rebuild, and run `uv run scripts/check_playwright_version.py`
 - Validate the plugin manifest with `claude plugin validate .`
 
 ## Commits and Pull Requests
@@ -53,7 +54,7 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 | `docs:`, `chore:`, `ci:`, `build:` | Docs, maintenance, workflows, image build | Patch |
 
 - Branch from `master` and open the pull request against `master`
-- Keep a pull request to one change; Lint must pass. CI does not build the image for pull requests, so build it yourself (see Development Setup) when you change `docker/`
+- Keep a pull request to one change. CI runs no checks on pull requests, so build and smoke-test the image yourself (see Development Setup) when you change `docker/`, and run ruff when you change Python
 - Do not bump versions, edit `CHANGELOG.md`, or push tags; the release PR does that
 - Port defaults (`19222` CDP, `15900` VNC) and the container and volume names stay in step across the Dockerfile, the README, the docs, and `docker/docker-compose.yaml`
 

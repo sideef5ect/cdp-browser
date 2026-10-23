@@ -3,7 +3,7 @@ name = "cdp-browser"
 version = "0.0.0"  # not published; releases are versioned in .claude-plugin/plugin.json
 description = "Dev environment for the cdp-browser skill tests and diagram generators"
 requires-python = ">=3.11"
-# Keep in step with ARG PLAYWRIGHT_VERSION in docker/Dockerfile (checked by scripts/check_playwright_version.py)
+# Keep in step with ARG PLAYWRIGHT_VERSION in docker/Dockerfile (check locally with uv run scripts/check_playwright_version.py)
 dependencies = ["playwright==1.64.1"]
 
 [dependency-groups]
