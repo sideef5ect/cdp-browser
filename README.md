@@ -4,7 +4,7 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/sideef5ect/cdp-browser/build-image.yaml?branch=master&label=build)](https://github.com/sideef5ect/cdp-browser/actions/workflows/build-image.yaml)
 [![Image](https://img.shields.io/badge/ghcr.io-cdp--browser-2496ED?logo=docker&logoColor=white)](https://github.com/sideef5ect/cdp-browser/pkgs/container/cdp-browser)
 [![Platforms](https://img.shields.io/badge/platform-amd64%20%7C%20arm64-555)](#option-a-docker)
-[![License](https://img.shields.io/github/license/sideef5ect/cdp-browser)](LICENSE)
+[![License](https://img.shields.io/github/license/sideef5ect/cdp-browser?cacheSeconds=86400)](LICENSE)
 
 Give a coding agent a real, persistent browser over the Chrome DevTools Protocol (CDP).
 
