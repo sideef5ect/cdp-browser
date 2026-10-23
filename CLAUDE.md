@@ -30,7 +30,7 @@ An agent skill for driving a persistent browser over CDP with Playwright, plus a
 - **`master` is the production branch.** A push to `master` that touches `docker/` or the workflow builds and pushes `latest` and `sha-<commit>`.
 - Releases come from release-please (`.github/workflows/release.yaml`, `release-please-config.json`, `.release-please-manifest.json`). Never bump `version` in `.claude-plugin/plugin.json`, edit `CHANGELOG.md`, or push `v*` tags by hand: the release PR does all three. Merging it tags `vX.Y.Z`, creates the GitHub release, and calls `build-image.yaml` to publish `X.Y.Z` and `X.Y`.
 - `feat:` bumps minor, `fix:`/`docs:`/`chore:` bump patch, `!` or `BREAKING CHANGE:` bumps minor while `bump-major-for-breaking-change` is false. Force a version with an empty commit whose body has `Release-As: X.Y.Z`.
-- Without a `PERSONAL_ACCESS_TOKEN` secret the release PR must be approved and merged by hand; with one it auto-merges.
+- The release workflow uses only `GITHUB_TOKEN`; never add a personal access token secret. The release PR is approved and merged by hand. Because it is opened with `GITHUB_TOKEN`, its checks do not run on their own; the content was already checked on `master`.
 - Pull requests build both platforms and push nothing.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `ci:`).
 

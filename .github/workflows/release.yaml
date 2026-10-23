@@ -12,65 +12,26 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write      # Create releases
-  pull-requests: write # Create and merge PRs
+  contents: write      # Create releases and tags
+  pull-requests: write # Open and update the release PR
   issues: write        # Create labels
   packages: write      # Push the release image (build-image job)
 
 jobs:
+  # Opens or updates the release PR with GITHUB_TOKEN. Approve and merge it by
+  # hand; the run triggered by that merge tags vX.Y.Z and creates the release.
   release-please:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       version: ${{ steps.release.outputs.version }}
-      pr_number: ${{ steps.get-pr-number.outputs.pr_number }}
-      has_pat: ${{ steps.pat.outputs.present }}
     steps:
-      # Detect whether a PAT is configured. Without one the release PR is still
-      # opened with GITHUB_TOKEN, but must be approved and merged by hand.
-      - id: pat
-        env:
-          PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        run: |
-          if [ -n "$PAT" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - id: release
         uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # Falls back to the built-in GITHUB_TOKEN when no PAT is set.
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
-
-      - id: get-pr-number
-        if: ${{ steps.release.outputs.pr }}
-        run: |
-          PR_JSON='${{ steps.release.outputs.pr }}'
-          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-
-  # Runs only when a PAT is configured. Without one, approve and merge the
-  # release PR manually; the follow-up run tags the release.
-  approve-and-auto-merge:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.pr_number && needs.release-please.outputs.has_pat == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Approve Pull Request
-        uses: hmarr/auto-approve-action@v3
-        with:
-          pull-request-number: ${{ needs.release-please.outputs.pr_number }}
-
-      - name: Enable Auto-Merge
-        env:
-          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          PR_NUMBER: ${{ needs.release-please.outputs.pr_number }}
-        run: |
-          gh pr merge $PR_NUMBER --auto --squash --repo ${{ github.repository }}
+          token: ${{ github.token }}
 
   # A release made with GITHUB_TOKEN triggers no other workflow, so the
   # versioned image is built here instead of on a tag push.
