@@ -1,0 +1,27 @@
+name: Lint
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      # Python comes from .python-version; --locked fails if uv.lock is stale
+      - run: uv sync --locked
+
+      - name: Playwright pin matches the image
+        run: uv run scripts/check_playwright_version.py
+
+      - run: uv run ruff check .
+
+      - run: uv run ruff format --check .

@@ -1,0 +1,21 @@
+[project]
+name = "cdp-browser"
+version = "0.0.0"  # not published; releases are versioned in .claude-plugin/plugin.json
+description = "Dev environment for the cdp-browser skill tests and diagram generators"
+requires-python = ">=3.11"
+# Keep in step with ARG PLAYWRIGHT_VERSION in docker/Dockerfile (checked by scripts/check_playwright_version.py)
+dependencies = ["playwright==1.64.1"]
+
+[dependency-groups]
+dev = ["ruff"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
