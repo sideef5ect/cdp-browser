@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in the image or the skill does not work as documented
+labels: [bug]
+body:
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - Docker container
+        - Host Chrome
+        - Both
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Image tag or digest (`docker inspect --format '{{index .RepoDigests 0}}' ghcr.io/sideef5ect/cdp-browser`), or the skill's release
+      placeholder: ghcr.io/sideef5ect/cdp-browser:1.0.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Host OS and architecture, Docker version, agent (Claude Code, Codex, other)
+      placeholder: Ubuntu 24.04 arm64, Docker 27, Claude Code
+    validations:
+      required: true
+  - type: textarea
+    id: run
+    attributes:
+      label: How the browser was started
+      description: The `docker run` flags, Compose file, or Chrome command line
+      render: bash
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: A minimal script or the agent prompt that triggers it
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `docker logs browser-cdp` or the script's traceback
+      render: text
