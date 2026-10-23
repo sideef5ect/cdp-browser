@@ -247,7 +247,3 @@ Releases are cut by [release-please](https://github.com/googleapis/release-pleas
 ## Contributing
 
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, tests, and commit format, and [SECURITY.md](SECURITY.md) to report a vulnerability privately.
-
-## License
-
-[MIT](LICENSE)
