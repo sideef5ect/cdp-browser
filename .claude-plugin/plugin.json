@@ -1,7 +1,7 @@
 {
   "name": "cdp-browser",
   "description": "Drive a persistent browser over CDP with Playwright, in Docker or host Chrome, without stealing desktop focus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "sideef5ect"
   },
