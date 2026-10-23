@@ -37,6 +37,7 @@ jobs:
       build: ${{ steps.v.outputs.build }}
       version: ${{ steps.v.outputs.version }}
       ref: ${{ steps.v.outputs.ref }}
+      short: ${{ steps.v.outputs.short }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,7 +55,9 @@ jobs:
           case "$EVENT" in
             workflow_run) tag=$(git tag --points-at HEAD --list 'v*.*.*' | sort -V | tail -n 1) ;;
             push)         tag="$REF_NAME" ;;
-            *)            tag="${INPUT_VERSION:+v${INPUT_VERSION#v}}" ;;
+            *)            tag="${INPUT_VERSION:+v${INPUT_VERSION#v}}"
+                          # Rebuild a release from its own tag, not the dispatched ref
+                          if [ -n "$tag" ]; then git checkout -q "$tag"; fi ;;
           esac
           if [ "$EVENT" = workflow_run ] && [ -z "$tag" ]; then
             echo "No release tag on $(git rev-parse --short HEAD); nothing to build"
@@ -65,6 +68,7 @@ jobs:
             echo "build=true"
             echo "version=${tag#v}"
             echo "ref=$(git rev-parse HEAD)"
+            echo "short=$(git rev-parse --short=7 HEAD)"
           } >> "$GITHUB_OUTPUT"
           echo "Building ${tag:-latest} from $(git rev-parse --short HEAD)"
 
@@ -98,14 +102,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          # Read the commit and ref from the checkout, not the workflow_run event
-          context: git
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{ needs.resolve.outputs.version != '' || github.ref == 'refs/heads/master' }}
             type=semver,pattern={{version}},value=v${{ needs.resolve.outputs.version }},enable=${{ needs.resolve.outputs.version != '' }}
             type=semver,pattern={{major}}.{{minor}},value=v${{ needs.resolve.outputs.version }},enable=${{ needs.resolve.outputs.version != '' }}
-            type=sha
+            type=raw,value=sha-${{ needs.resolve.outputs.short }}
+          # github.sha is the latest master commit on workflow_run, so label the built commit instead
+          labels: |
+            org.opencontainers.image.revision=${{ needs.resolve.outputs.ref }}
 
       - name: Build and push image
         uses: docker/build-push-action@v7
