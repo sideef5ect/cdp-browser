@@ -3,7 +3,9 @@
 # Run:   docker run -d -p 127.0.0.1:19222:19222 -p 127.0.0.1:15900:15900 --name browser-cdp cdp-browser
 # CDP:   localhost:19222 | VNC: localhost:15900
 
-FROM ubuntu:22.04
+# Pinned by digest for reproducible builds; Dependabot bumps the digest weekly.
+# Move to a newer Ubuntu LTS by hand, with a Playwright version whose install-deps supports it.
+FROM ubuntu:22.04@sha256:0a9887931b0e38af2e3487ed39e29436b0535c4f3f52e57745baaf79d1898956
 
 # Pinned so the Chromium build only changes when this is bumped
 ARG PLAYWRIGHT_VERSION=1.64.1

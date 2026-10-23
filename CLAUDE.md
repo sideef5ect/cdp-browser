@@ -13,6 +13,7 @@ An agent skill for driving a persistent browser over CDP with Playwright, plus a
 - Examples that publish ports bind to `127.0.0.1`. CDP has no authentication and exposes every logged-in session in the profile.
 - The image, `docker run` examples, and `docker/docker-compose.yaml` stay in step: the same container name (`browser-cdp`), volume names (`browser-chrome-profile`, `browser-webkit-profile`), ports, and `--shm-size=1g`.
 - Container ports default to `CDP_PORT=19222` and `VNC_PORT=15900` (Chromium itself on loopback `CHROME_CDP_PORT=19223`, exposed by socat). Never move them back to 9222/5900: host network mode would collide with a host Chrome or VNC server. Host Chrome docs keep 9222.
+- The base image is pinned as `ubuntu:22.04@sha256:...`. Dependabot only bumps the digest; a new Ubuntu release is a manual change together with a Playwright version that supports it, rebuilt and smoke-tested before merge.
 - Playwright is pinned twice: `ARG PLAYWRIGHT_VERSION` in `docker/Dockerfile` and `playwright==` in `pyproject.toml`. Change both in one commit, run `uv lock`, rebuild, and rerun the smoke test; `scripts/check_playwright_version.py` fails CI when they differ.
 - `pyproject.toml` is a dev environment only (`package = false`), never a published package. The skill must keep working without it: `SKILL.md` code is pasted into the user's own scripts.
 

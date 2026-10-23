@@ -18,9 +18,15 @@ updates:
       interval: weekly
     commit-message:
       prefix: build
+  # Digest updates only (security patches to ubuntu:22.04). A new Ubuntu release
+  # breaks Playwright's install-deps until Playwright supports it, so release
+  # jumps such as 22.04 -> 24.04 or 26.04 are ignored and done by hand.
   - package-ecosystem: docker
     directory: /docker
     schedule:
       interval: weekly
     commit-message:
       prefix: build
+    ignore:
+      - dependency-name: ubuntu
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
